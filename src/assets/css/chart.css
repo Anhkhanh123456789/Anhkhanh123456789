@@ -1,0 +1,22 @@
+.container {
+    max-width: 800px;
+    margin: auto;
+    padding: 20px;
+  }
+  .button-container {
+    margin-top: 20px;
+    
+    
+  }
+  button {
+    margin-top: 50px;
+    margin-right: 10px;
+    border-radius: 10px;
+    margin-bottom:  50px;
+  }
+  .btuStart{
+    background-color: green;
+  }
+  .btuStop{
+    background-color: red;
+  }
