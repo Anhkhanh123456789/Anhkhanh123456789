@@ -1,0 +1,19 @@
+
+
+  .progress-bar.vertical {
+    width: 100%; /* Chiều rộng sẽ thành chiều cao */
+    height: 150px; /* Chiều cao điều chỉnh theo tỷ lệ % */
+    transform: rotate(270deg); /* Xoay thanh từ ngang sang dọc */
+    transform-origin: bottom left; /* Đảm bảo thanh xoay đúng vị trí */
+    margin-top: 50px;
+    font-size: 16px;
+    margin-left: 133px;
+    position: absolute; /* Thiết lập vị trí tuyệt đối */
+    bottom: 0; /* Đặt thanh ở mép dưới */
+  }
+  .card{
+    height: 170px;
+    width: 150px;
+    background-color: aqua;
+ 
+  }

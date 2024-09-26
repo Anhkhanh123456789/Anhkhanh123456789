@@ -1,0 +1,12 @@
+.scada-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f0f0f0;
+  }
+  
+  svg {
+    border: 1px solid #000;
+    border-radius: 10px;
+  }
+ 
