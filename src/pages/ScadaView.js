@@ -6,6 +6,9 @@ import tankImage from '../assets/images/tank.jpg';
 const ScadaView = () => {
   const [tankLevel, setTankLevel] = useState(0); // Mực nước ban đầu trong bể
   const [isIncreasing, setIsIncreasing] = useState(true); // Trạng thái tăng/giảm
+
+  const [WanterLevel, setWaterLevel] = useState(0); // Mực nước ban đầu trong bể
+  const [isWanterIncreasing, setIsWaterIncreasing] = useState(true); // Trạng thái tăng/giảm
   const [bigTankLevel, setBigTankLevel] = useState(88);
   const [smallTankLevel, setSmallTankLevel] = useState(65);
   const [flowRate, setFlowRate] = useState(81); // Lưu lượng nước
@@ -16,6 +19,7 @@ const ScadaView = () => {
   const [motor2Running, setMotor2Running] = useState(false); // Trạng thái động cơ
   const [deg2, setDeg2] = useState(0); // Góc quay của động cơ
   const [speed2, setSpeed2] = useState(0);
+ 
   useEffect(()=>{
     console.log(speed1);
     let motor1IntervalId;
@@ -40,7 +44,26 @@ const ScadaView = () => {
       clearInterval(motor2IntervalId);// Dừng quay motor khi motorRunning là false
     };
   }, [motor2Running,speed2]);
-
+  useEffect(()=>{
+    const interval = setInterval(()=>{
+      setWaterLevel(prev=>{
+        if(isWanterIncreasing){
+          if(prev>=100){
+            setIsWaterIncreasing(false);
+            return prev;
+          }
+          return Math.min(prev+1,100);
+        }else{
+          if(prev<=0){
+            setIsWaterIncreasing(true);
+            return Math.max(prev-1,0);
+          }
+          return Math.max(prev-1,0);
+        }
+      })
+    },100)
+    return()=>clearInterval(interval);
+  },[isWanterIncreasing]);
   useEffect(() => {
     console.log(motor1Running);
     const interval = setInterval(() => {
@@ -78,6 +101,8 @@ const ScadaView = () => {
       setBigTankLevel(50);
     } else if (tankType === 'smallTank') {
       setSmallTankLevel(50);
+    }else if(tankType === 'WaterTank'){
+      setWaterLevel(0);
     }
   };
   const StartStopMotor = (motortype,isBoolllll)=>{
@@ -139,12 +164,188 @@ const ScadaView = () => {
   } 
   window.StartStopMotor = StartStopMotor;
   // Hàm xử lý reset thông qua popup xác nhận
+  const ChartTankLevel = (event, typeChart) => {
+    const buttonPosition = {
+      x: event.screenX,
+      y: event.screenY
+    };
+    const newWindow = window.open(
+      "123",
+      "Xác nhận Reset",
+      `width=600,height=300,left=${buttonPosition.x},top=${buttonPosition.y}`
+    );
+  
+    newWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="vi">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Biểu đồ Trực tiếp với Chart.js</title>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+        
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+          }
+          .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+          }
+          canvas {
+            width: 100%;
+            height: 300px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">      
+          <canvas id="myChart"></canvas>
+        </div>
+  
+        <script>
+          const Utils = {
+            CHART_COLORS: {
+              red: 'rgb(255, 99, 132)',
+              blue: 'rgb(54, 162, 235)',
+              green: 'rgb(75, 192, 192)',
+              yellow: 'rgb(255, 205, 86)',
+              orange: 'rgb(255, 159, 64)',
+              purple: 'rgb(153, 102, 255)',
+              grey: 'rgb(201, 203, 207)'
+            },
+            getCurrentTime() {
+              const now = new Date();
+              return now.toLocaleTimeString(); // Thời gian hiện tại
+            }
+          };
+  
+          const data = {
+            labels: [Utils.getCurrentTime()], // Bắt đầu với thời gian hiện tại
+            datasets: [
+              {
+                label: 'Mức nước',
+                data: [${tankLevel}], // Giá trị khởi tạo là tankLevel
+                borderColor: Utils.CHART_COLORS.red,
+                backgroundColor: Utils.CHART_COLORS.red.replace('rgb', 'rgba').replace(')', ', 0.5)'),
+              },
+            ]
+          };
+  
+          const config = {
+            type: 'line',
+            data: data,
+            options: {
+              responsive: true,
+              plugins: {
+                legend: {
+                  position: 'top',
+                },
+                title: {
+                  display: true,
+                  text: 'Biểu đồ với Thanh Trượt'
+                },
+                zoom: {
+                  pan: {
+                    enabled: true, // Bật tính năng kéo
+                    mode: 'x',     // Kéo theo trục x
+                    threshold: 10,
+                    onPanStart: function({chart}) {
+                      console.log('Bắt đầu kéo trục x');
+                    },
+                    onPan: function({chart}) {
+                      isPanning.current = true; // Đang kéo
+                      console.log('Kéo trục x');
+                    },
+                    onPanComplete: function({chart}) {
+                      isPanning.current = false; // Hoàn thành kéo
+                      chart.update(); // Cập nhật biểu đồ
+                      console.log('Hoàn tất kéo');
+                    }
+                  },
+                  zoom: {
+                    wheel: {
+                      enabled: true, // Cho phép zoom bằng chuột cuộn
+                    },
+                    pinch: {
+                      enabled: true, // Cho phép zoom bằng pinch (chạm 2 ngón)
+                    },
+                    mode: 'x', // Zoom theo trục x
+                  }
+                }
+              },
+              scales: {
+                x: {
+                  type: 'category',
+                  ticks: {
+                    maxTicksLimit: 12
+                  },
+                  afterBuildTicks: function(scale) {
+                    // Cắt bớt nhãn nếu có nhiều hơn maxTicksLimit
+                    if (scale.ticks.length > 12) {
+                      scale.ticks = scale.ticks.slice(-12);
+                    }
+                  }
+                },
+                y: {
+                  beginAtZero: true
+                }
+              }
+            }
+          };
+  
+          const ctx = document.getElementById('myChart').getContext('2d');
+          const myChart = new Chart(ctx, config);
+  
+          function addData() {
+            const currentTime = Utils.getCurrentTime(); // Lấy thời gian hiện tại
+            const data = myChart.data;
+  
+            // Thêm nhãn thời gian
+            data.labels.push(currentTime);
+            
+            // Thêm giá trị tankLevel từ window.opener
+            const tankLevel = window.opener.tankLevel; // Lấy giá trị từ component chính
+            data.datasets.forEach(dataset => {
+              dataset.data.push(tankLevel);
+            });
+            
+            // Cập nhật giới hạn cho trục x để hiển thị 10 giá trị mới nhất
+            const startIndex = Math.max(data.labels.length - 10, 0); // Bắt đầu từ nhãn thứ 0 nếu có ít hơn 10 nhãn
+            const endIndex = data.labels.length - 1; // Nhãn hiện tại
+  
+            // Cập nhật các giới hạn cho trục x
+            myChart.options.scales.x.min = data.labels[startIndex];
+            myChart.options.scales.x.max = data.labels[endIndex];
+  
+            myChart.update(); // Cập nhật biểu đồ
+          }
+  
+          // Tự động thêm dữ liệu mỗi 2 giây
+          setInterval(addData, 1000);
+        </script>
+      </body>
+      </html>
+    `);
+  };
+  
+
+
+
+  
+  // Đảm bảo rằng tankLevel được lưu trữ trong window.opener
+  window.tankLevel = tankLevel; // Lưu giá trị tankLevel vào biến toàn cục
+  
+  
   const handleReset = (event, tankType) => {
     const buttonPosition = {
       x: event.screenX, // Vị trí x của nút trên màn hình
       y: event.screenY  // Vị trí y của nút trên màn hình
     };
-
+    
     const newWindow = window.open(
       "123",
       "Xác nhận Reset",
@@ -196,9 +397,9 @@ const ScadaView = () => {
           />
           <text x="220" y="60" fontSize="16" fontFamily="Arial">Tank Level: {tankLevel.toFixed(1)}%</text>
 
-          {/* Nút bấm reset cho tankLevel */}
+          {/* */}
           <rect 
-            x="190" 
+            x="220" 
             y="70" 
             width="120" 
             height="30" 
@@ -213,7 +414,7 @@ const ScadaView = () => {
             style={{ cursor: 'pointer' }} 
           />
           <text 
-            x="250" 
+            x="280" 
             y="90" 
             fontSize="14" 
             fontFamily="Arial" 
@@ -227,6 +428,40 @@ const ScadaView = () => {
             onMouseLeave={() => setButtonColor('lightblue')} // Khi di chuột ra
           >
             Reset tankLevel
+          </text>
+
+
+             {/* */}
+            <rect 
+            x="420" 
+            y="70" 
+            width="120" 
+            height="30" 
+            fill={buttonColor} 
+            onClick={(event) =>{
+              event.stopPropagation(); // Ngăn sự kiện lan truyền đến phần tử cha
+               ChartTankLevel(event, 'Chartlevetank')}}
+            onMouseEnter={() => setButtonColor('skyblue')} // Khi di chuột vào
+            onMouseLeave={() => setButtonColor('lightblue')} // Khi di chuột ra
+            rx="10" // Góc bo tròn
+            ry="10" // Góc bo tròn
+            style={{ cursor: 'pointer' }} 
+          />
+          <text 
+            x="480" 
+            y="90" 
+            fontSize="14" 
+            fontFamily="Arial" 
+            textAnchor="middle" 
+            fill="black" 
+            style={{ cursor: 'pointer' }} 
+            onClick={(event) =>{
+              event.stopPropagation(); // Ngăn sự kiện lan truyền đến phần tử cha
+               ChartTankLevel(event, 'Chartlevetank')}}
+            onMouseEnter={() => setButtonColor('skyblue')} // Khi di chuột vào
+            onMouseLeave={() => setButtonColor('lightblue')} // Khi di chuột ra
+          >
+            Chart tankLevel
           </text>
         </g>
 
@@ -390,7 +625,7 @@ const ScadaView = () => {
             fill="blue"
           />
           <text x="90" y="305" fontSize="16" fontFamily="Arial">Small Tank: {smallTankLevel.toFixed(1)}%</text>
-          {/* Nút bấm reset cho smallTankLevel */}
+          {/* */}
           <rect 
             x="70" 
             y="310" 
@@ -426,24 +661,57 @@ const ScadaView = () => {
         </g>
         <g>
          {/* Vẽ bể nước không có nắp trên */}
-  <path 
-    d="M1100 530 L1100 730 L1350 730 L1350 530" 
-    fill="none" 
-    stroke="black" 
-    strokeWidth="2"
-  />
+          <path 
+            d="M1100 530 L1100 730 L1350 730 L1350 530" 
+            fill="none" 
+            stroke="black" 
+            strokeWidth="2"
+          />
 
-  {/* Mực nước bên trong bể */}
-  <rect
-    x="1100"
-    y={730 - (bigTankLevel / 100) * 150}
-    width="250"
-    height={(bigTankLevel / 100) * 150}
-    fill="blue"
-  />
+          {/* Mực nước bên trong bể */}
+          <rect
+            x="1100"
+            y={730 - (WanterLevel / 100) * 150}
+            width="250"
+            height={(WanterLevel / 100) * 150}
+            fill="blue"
+          />
 
-  {/* Nhãn bể nước */}
-  <text x="1150" y="480" fontSize="16" fontFamily="Arial">Water tank : {bigTankLevel.toFixed(1)}%</text>
+          {/* Nhãn bể nước */}
+          <text x="1150" y="480" fontSize="16" fontFamily="Arial">Water tank : {WanterLevel.toFixed(1)}%</text>
+           {/* */}
+           <rect 
+            x="1150" 
+            y="490" 
+            width="120" 
+            height="30" 
+            fill={buttonColor} 
+            onClick={(event) => {
+              event.stopPropagation(); // Ngăn sự kiện lan truyền đến phần tử cha
+              handleReset(event, 'WaterTank')}} 
+            onMouseEnter={() => setButtonColor('skyblue')} // Khi di chuột vào
+            onMouseLeave={() => setButtonColor('lightblue')} // Khi di chuột ra
+            rx="10" // Góc bo tròn
+            ry="10" // Góc bo tròn
+            style={{ cursor: 'pointer' }} 
+          />
+          <text 
+            x="1210" 
+            y="510" 
+            fontSize="14" 
+            fontFamily="Arial" 
+            textAnchor="middle" 
+            fill="black" 
+            style={{ cursor: 'pointer' }} 
+            onClick={(event) => {
+              event.stopPropagation(); // Ngăn sự kiện lan truyền đến phần tử cha
+              handleReset(event, 'WaterTank')}}
+
+            onMouseEnter={() => setButtonColor('skyblue')} // Khi di chuột vào
+            onMouseLeave={() => setButtonColor('lightblue')} // Khi di chuột ra  
+          >
+            Reset Wanter 
+          </text>
         </g>
       </svg>
     </div>
